@@ -184,6 +184,18 @@ def test_cursor_position_and_delivery_tokens_are_opaque_scoped_and_authenticated
         )
 
 
+def test_token_codec_rejects_noncanonical_signature_encoding() -> None:
+    codec = TokenCodec((TokenKey("active", b"k" * 32, True),))
+    parts = codec.encode({"type": "cursor"}).split(".")
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    final_index = alphabet.index(parts[-1][-1])
+    assert final_index % 4 == 0
+    parts[-1] = f"{parts[-1][:-1]}{alphabet[final_index + 1]}"
+
+    with pytest.raises(ValueError, match="canonical encoding"):
+        codec.decode(".".join(parts), "cursor")
+
+
 def test_cursor_expiry_and_key_rotation() -> None:
     old = TokenKey("old", b"o" * 32, True)
     old_codec = KafkaCursorCodec((old,), ttl_ms=100)
