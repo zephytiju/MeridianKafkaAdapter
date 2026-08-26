@@ -1,0 +1,53 @@
+{
+  "adapterContractVersion": "1.0.0",
+  "adapterDescriptorFingerprint": "sha256:1ed49d5602c43585ac7a5e4dd2858d041b57c128e78146928ac0451b0abe6e68",
+  "brokerMatrix": {
+    "migrationSources": [
+      "3.9.2",
+      "4.0.2"
+    ],
+    "primary": "4.3.1",
+    "supported": [
+      "4.1.2",
+      "4.2.1",
+      "4.3.1"
+    ]
+  },
+  "designRevisions": {
+    "catalogsAndPublicInterfaces": 70,
+    "engineAdapters": 24,
+    "kafkaStreamingAdapter": 6,
+    "meridianConstructs": 45,
+    "meridianHld": 56
+  },
+  "distribution": "meridian-storage-kafka==1.0.0",
+  "formatVersion": "meridian.kafka.compatibility.v1",
+  "pins": {
+    "confluent-kafka": {
+      "license": "Apache-2.0",
+      "version": "2.15.0"
+    },
+    "meridian-storage-core": {
+      "sdistSha256": "2c4475260c7eff6a8b1ca84ebad4c7615b8a0789a94afdf108766ee10e3c0d5a",
+      "version": "1.0.0",
+      "wheelSha256": "6b8ebb70ee1a8467a96d668878a8eebf826c1c4b63b3832ae70f2c630a8ef4a1"
+    },
+    "meridian-storage-semantics": {
+      "sdistSha256": "026088a9156667305447f487b097a1b249b4a222e1d527e0bc374d87c5e80311",
+      "version": "1.0.0",
+      "wheelSha256": "76fced0bc083f145fad1949b85147a3563f3584f99994471693915a8ba1851ec"
+    },
+    "meridian-storage-streaming": {
+      "conformanceFingerprint": "sha256:f8aa8438b1e997e40a5821095e2967cd05f06118194e45f14e50d8bcc5487bff",
+      "manifestFingerprint": "sha256:1a13fc3917164af1b192c13e7d29caa7c082540eb0d9cd7d57e23298db07bbf2",
+      "sdistSha256": "a5b259499c4298e55c47190ed69ea848ac01dd2d39d56e8a348321a330785831",
+      "version": "1.0.0",
+      "wheelSha256": "8fa802d1f4d69082b1bb2643856f82db9159ebe92fcd819aa529c143cd8d51eb"
+    }
+  },
+  "python": [
+    "3.12",
+    "3.13",
+    "3.14"
+  ]
+}

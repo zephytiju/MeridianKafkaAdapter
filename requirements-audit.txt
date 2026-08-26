@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+confluent-kafka==2.15.0
+meridian-storage-core==1.0.0
+meridian-storage-semantics==1.0.0
+meridian-storage-streaming==1.0.0
