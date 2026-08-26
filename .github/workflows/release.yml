@@ -122,6 +122,7 @@ jobs:
           path: release-payload
       - name: Create immutable release
         env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: gh release create "$RELEASE_TAG" release-payload/* --verify-tag --generate-notes --title "meridian-storage-kafka ${RELEASE_TAG#v}"
