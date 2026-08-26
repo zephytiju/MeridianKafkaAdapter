@@ -18,7 +18,7 @@ selects this adapter through a closed Meridian Binding.
 
 ## Compatibility
 
-Version 1.0.0 is pinned to:
+Version 1.0.1 is pinned to:
 
 | Component | Supported version |
 |---|---|
@@ -44,8 +44,12 @@ python -m pip install \
   meridian-storage-core==1.0.0 \
   meridian-storage-semantics==1.0.0 \
   meridian-storage-streaming==1.0.0 \
-  meridian-storage-kafka==1.0.0
+  meridian-storage-kafka==1.0.1
 ```
+
+Version 1.0.1 corrects the upstream sdist digests and Streaming conformance
+fingerprint in the compatibility ledger shipped with 1.0.0. Runtime contracts
+and dependency versions are unchanged.
 
 Core discovers the immutable `meridian.kafka` factory through the
 `meridian_storage.adapters` entry-point group. A Binding supplies opaque

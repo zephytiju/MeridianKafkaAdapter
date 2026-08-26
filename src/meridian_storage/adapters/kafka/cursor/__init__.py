@@ -377,7 +377,10 @@ def _b64(value: bytes) -> str:
 def _unb64(value: str) -> bytes:
     if not isinstance(value, str) or not value:
         raise ValueError("base64url value must be non-empty")
-    return base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
+    decoded = base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
+    if _b64(decoded) != value:
+        raise ValueError("base64url value must use its canonical encoding")
+    return decoded
 
 
 def _now_ms() -> int:

@@ -5,8 +5,13 @@ from __future__ import annotations
 
 import sys
 import tarfile
+import tomllib
 import zipfile
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+EXPECTED_VERSION = str(PROJECT["version"])
 
 REQUIRED_WHEEL_SUFFIXES = {
     "meridian_storage/adapters/kafka/__init__.py",
@@ -38,6 +43,7 @@ def _verify_wheel(path: Path) -> None:
         text = archive.read(metadata[0]).decode("utf-8")
         if (
             "Name: meridian-storage-kafka" not in text
+            or f"Version: {EXPECTED_VERSION}" not in text
             or "License-Expression: Apache-2.0" not in text
         ):
             raise SystemExit(f"{path.name} metadata identity or SPDX license is invalid")
@@ -66,6 +72,10 @@ def main(arguments: list[str]) -> None:
     sdists = tuple(path for path in paths if path.name.endswith(".tar.gz"))
     if len(wheels) != 1 or len(sdists) != 1:
         raise SystemExit("verification requires exactly one wheel and one sdist")
+    if not wheels[0].name.startswith(f"meridian_storage_kafka-{EXPECTED_VERSION}-"):
+        raise SystemExit(f"wheel filename does not match project version {EXPECTED_VERSION}")
+    if sdists[0].name != f"meridian_storage_kafka-{EXPECTED_VERSION}.tar.gz":
+        raise SystemExit(f"sdist filename does not match project version {EXPECTED_VERSION}")
     _verify_wheel(wheels[0])
     _verify_sdist(sdists[0])
     print("single distribution, SPDX metadata, entry point, and release contents: PASS")

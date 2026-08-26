@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_repository_contains_exactly_one_distribution_and_adapter_package() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     assert project["name"] == "meridian-storage-kafka"
-    assert project["version"] == "1.0.0"
+    assert project["version"] == "1.0.1"
     assert project["license"] == "Apache-2.0"
     assert project["dependencies"] == [
         "confluent-kafka==2.15.0",
@@ -44,9 +44,22 @@ def test_spdx_license_notice_and_compatibility_evidence_are_present() -> None:
             encoding="utf-8"
         )
     )
-    assert compatibility["distribution"] == "meridian-storage-kafka==1.0.0"
+    assert compatibility["distribution"] == "meridian-storage-kafka==1.0.1"
     assert compatibility["brokerMatrix"]["supported"] == ["4.1.2", "4.2.1", "4.3.1"]
-    assert compatibility["pins"]["meridian-storage-streaming"]["version"] == "1.0.0"
+    pins = compatibility["pins"]
+    assert pins["meridian-storage-core"]["sdistSha256"] == (
+        "2c44d44569a380f44ea7f797e7fe623d0242fa79b6bc34606d6bad1bc53f2d5a"
+    )
+    assert pins["meridian-storage-semantics"]["sdistSha256"] == (
+        "02605909db5dc7ff22d4ae5e3ae1b3fe6c25a68e9ecaa4c3ead36082848d0311"
+    )
+    assert pins["meridian-storage-streaming"]["version"] == "1.0.0"
+    assert pins["meridian-storage-streaming"]["sdistSha256"] == (
+        "a5b259c03ddf82dde8d1e6696e492a6c62f540151633b722107e8518c7cb5831"
+    )
+    assert pins["meridian-storage-streaming"]["conformanceFingerprint"] == (
+        "sha256:f8aa3e2c092062d1c758722b9ab2d9388f0deedeabf214f45e6212dc29e7cbff"
+    )
 
 
 def test_boundary_verifier_rejects_lifecycle_and_package_drift() -> None:

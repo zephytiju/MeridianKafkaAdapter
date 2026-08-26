@@ -10,6 +10,7 @@ import os
 import re
 import subprocess  # nosec B404
 import sys
+import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -136,6 +137,14 @@ def _utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _distribution_version() -> str:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    version = project.get("version")
+    if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
+        raise RuntimeError("project.version must be an exact semantic version")
+    return version
+
+
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--kafka-version", required=True, choices=SUPPORTED_VERSIONS)
@@ -151,6 +160,7 @@ def _arguments() -> argparse.Namespace:
 def main() -> int:
     arguments = _arguments()
     version = str(arguments.kafka_version)
+    adapter_version = _distribution_version()
     port = int(arguments.port)
     if not 1024 <= port <= 65_535:
         raise ValueError("--port must be between 1024 and 65535")
@@ -228,7 +238,7 @@ def main() -> int:
         "acceptanceCoverage": ACCEPTANCE_COVERAGE,
         "adapter": {
             "distribution": "meridian-storage-kafka",
-            "version": "1.0.0",
+            "version": adapter_version,
         },
         "dependencies": {
             "confluent-kafka": "2.15.0",
