@@ -30,9 +30,12 @@ jobs:
       - name: Install exact test graph
         run: python -m pip install --disable-pip-version-check -e '.[test]'
       - name: Verify tag and package version
+        id: package_version
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-        run: python scripts/verify_release_tag.py "$RELEASE_TAG"
+        run: |
+          python scripts/verify_release_tag.py "$RELEASE_TAG"
+          echo "value=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
       - name: Run release quality gate
         run: |
           ruff format --check src scripts conformance/scripts tests
@@ -52,7 +55,7 @@ jobs:
         with:
           path: dist
           format: spdx-json
-          output-file: dist/meridian-storage-kafka-1.0.0.spdx.json
+          output-file: dist/meridian-storage-kafka-${{ steps.package_version.outputs.value }}.spdx.json
           upload-artifact: false
           upload-release-assets: false
       - name: Attest SLSA build provenance
@@ -67,14 +70,15 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/meridian_storage_kafka-*.whl
-          sbom-path: dist/meridian-storage-kafka-1.0.0.spdx.json
+          sbom-path: dist/meridian-storage-kafka-${{ steps.package_version.outputs.value }}.spdx.json
       - name: Bundle attestations and checksums
         env:
+          PACKAGE_VERSION: ${{ steps.package_version.outputs.value }}
           PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
           SBOM_BUNDLE: ${{ steps.sbom.outputs.bundle-path }}
         run: |
-          cp "$PROVENANCE_BUNDLE" dist/meridian-storage-kafka-1.0.0.provenance.sigstore.json
-          cp "$SBOM_BUNDLE" dist/meridian-storage-kafka-1.0.0.sbom.sigstore.json
+          cp "$PROVENANCE_BUNDLE" "dist/meridian-storage-kafka-${PACKAGE_VERSION}.provenance.sigstore.json"
+          cp "$SBOM_BUNDLE" "dist/meridian-storage-kafka-${PACKAGE_VERSION}.sbom.sigstore.json"
           cd dist
           sha256sum * > SHA256SUMS
       - name: Upload release payload
