@@ -1,0 +1,10 @@
+Meridian Kafka Adapter
+Copyright 2026 Meridian contributors
+
+This product includes software developed for the Meridian project.
+
+Apache Kafka is a trademark of The Apache Software Foundation. This product is
+not endorsed by or affiliated with The Apache Software Foundation.
+
+The confluent-kafka Python client is Copyright Confluent, Inc. and is made
+available under the Apache License, Version 2.0.

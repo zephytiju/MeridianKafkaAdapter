@@ -1,0 +1,127 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build, verify, and attest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install exact test graph
+        run: python -m pip install --disable-pip-version-check -e '.[test]'
+      - name: Verify tag and package version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python scripts/verify_release_tag.py "$RELEASE_TAG"
+      - name: Run release quality gate
+        run: |
+          ruff format --check src scripts conformance/scripts tests
+          ruff check src scripts conformance/scripts tests
+          mypy src scripts conformance/scripts tests
+          pytest -q -m 'not cluster'
+          bandit -q -c pyproject.toml -r src scripts conformance/scripts
+          pip-audit --strict --requirement requirements-audit.txt
+          python scripts/verify_boundaries.py
+      - name: Build and verify archives
+        run: |
+          python -m build
+          python scripts/verify_artifacts.py dist/*
+          cp evidence/cluster-conformance-*.json dist/
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: dist
+          format: spdx-json
+          output-file: dist/meridian-storage-kafka-1.0.0.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Attest SLSA build provenance
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/meridian_storage_kafka-*.whl
+            dist/meridian_storage_kafka-*.tar.gz
+      - name: Attest SPDX SBOM
+        id: sbom
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/meridian_storage_kafka-*.whl
+          sbom-path: dist/meridian-storage-kafka-1.0.0.spdx.json
+      - name: Bundle attestations and checksums
+        env:
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+          SBOM_BUNDLE: ${{ steps.sbom.outputs.bundle-path }}
+        run: |
+          cp "$PROVENANCE_BUNDLE" dist/meridian-storage-kafka-1.0.0.provenance.sigstore.json
+          cp "$SBOM_BUNDLE" dist/meridian-storage-kafka-1.0.0.sbom.sigstore.json
+          cd dist
+          sha256sum * > SHA256SUMS
+      - name: Upload release payload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-payload
+          path: dist/*
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/meridian-storage-kafka
+    permissions:
+      id-token: write
+    steps:
+      - name: Download release payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-payload
+          path: release-payload
+      - name: Select Python distributions
+        run: |
+          mkdir dist
+          cp release-payload/*.whl release-payload/*.tar.gz dist/
+      - name: Publish through PyPI trusted publishing
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  github-release:
+    name: Publish GitHub release
+    needs: [build, publish-pypi]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download release payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-payload
+          path: release-payload
+      - name: Create immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" release-payload/* --verify-tag --generate-notes --title "meridian-storage-kafka ${RELEASE_TAG#v}"
