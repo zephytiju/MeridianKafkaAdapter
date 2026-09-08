@@ -42,14 +42,14 @@
     "meridian-storage-streaming": "1.0.1"
   },
   "engine": {
-    "image": "apache/kafka:4.3.1",
-    "imageDigest": "apache/kafka@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837",
+    "image": "apache/kafka:4.0.2",
+    "imageDigest": "apache/kafka@sha256:836cafdad9f4825880d7cf1d5a21202915ae2527bd0ef1c3600c526ed7814d1f",
     "mode": "single-node-kraft-combined",
-    "version": "4.3.1"
+    "version": "4.0.2"
   },
-  "finishedAt": "2026-09-08T05:22:20.487169Z",
+  "finishedAt": "2026-09-08T05:22:32.381484Z",
   "fullFailureInjection": true,
-  "junitSha256": "sha256:2403f8cf79ed013f4b6f97d674f0fed986472206b44b95045fe8b7e59fd87345",
+  "junitSha256": "sha256:70117218dc05bec6b9172427a59a24e3008b8785af33435361a4744947c18f5f",
   "repository": "https://github.com/zephytiju/MeridianKafkaAdapter",
   "schemaVersion": "meridian.kafka.conformance-evidence.v1",
   "securityProfile": {
@@ -63,69 +63,69 @@
     ]
   },
   "sourceTreeSha256": "sha256:4434f6f539210c63090d21090127cb46655f8170ad1c0638c2b1839962afd71d",
-  "startedAt": "2026-09-08T05:21:14.621926Z",
+  "startedAt": "2026-09-08T05:21:11.267221Z",
   "status": "passed",
   "testCases": [
     {
       "name": "test_acl_denial_and_live_credential_rotation",
-      "seconds": 0.314,
+      "seconds": 0.337,
       "status": "passed"
     },
     {
       "name": "test_broker_controller_failure_is_normalized_and_recovers",
-      "seconds": 14.458,
+      "seconds": 24.72,
       "status": "passed"
     },
     {
       "name": "test_compaction_preserves_latest_keyed_event",
-      "seconds": 1.544,
+      "seconds": 0.479,
       "status": "passed"
     },
     {
       "name": "test_cursor_ttl_and_retention_expiry",
-      "seconds": 14.957,
+      "seconds": 14.917,
       "status": "passed"
     },
     {
       "name": "test_idempotent_producer_and_transactional_consume_publish",
-      "seconds": 1.024,
+      "seconds": 1.049,
       "status": "passed"
     },
     {
       "name": "test_partition_migration_detection_and_iac_recovery",
-      "seconds": 0.222,
+      "seconds": 0.26,
       "status": "passed"
     },
     {
       "name": "test_publish_batch_finite_consume_order_ack_recovery_probe_and_telemetry",
-      "seconds": 4.504,
+      "seconds": 4.536,
       "status": "passed"
     },
     {
       "name": "test_rebalance_invalidates_inflight_delivery_and_recovers",
-      "seconds": 3.514,
+      "seconds": 3.536,
       "status": "passed"
     },
     {
       "name": "test_redelivery_ack_recovery_and_dead_letter",
-      "seconds": 1.703,
+      "seconds": 1.738,
       "status": "passed"
     },
     {
       "name": "test_schema_evolution_accepts_compatible_and_rejects_incompatible",
-      "seconds": 0.329,
+      "seconds": 0.318,
       "status": "passed"
     },
     {
       "name": "test_unlisted_metadata_and_authenticated_tls",
-      "seconds": 9.369,
+      "seconds": 8.467,
       "status": "passed"
     }
   ],
   "totals": {
     "errors": 0,
     "failures": 0,
-    "seconds": 51.963,
+    "seconds": 60.375,
     "skipped": 0,
     "tests": 11
   }

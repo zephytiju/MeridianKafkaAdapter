@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Stable adapter identifiers and supported release matrix."""
+"""Stable contracts and historical tested releases (never membership gates)."""
 
 ADAPTER_ID = "meridian.kafka"
 ADAPTER_CONTRACT_VERSION = "1.0.0"
 CLIENT_ID = "confluent-kafka"
 CLIENT_VERSION = "2.15.0"
-DRIVER = f"{CLIENT_ID}=={CLIENT_VERSION}"
+DRIVER = CLIENT_ID
 PRODUCTION_ENGINE_PROFILE = "apache-kafka"
 TEST_ENGINE_PROFILE = "apache-kafka-test"
 SUPPORTED_ENGINE_VERSIONS = ("4.1.2", "4.2.1", "4.3.1")

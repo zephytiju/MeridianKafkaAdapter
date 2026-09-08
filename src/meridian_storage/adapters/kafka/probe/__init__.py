@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Mapping
+from importlib.metadata import version
 from typing import cast
 
+from confluent_kafka import libversion
 from confluent_kafka.admin import (  # type: ignore[attr-defined]
     ConfigResource,
     ResourceType,
@@ -21,12 +24,11 @@ from meridian_storage.spi import (
 from meridian_storage.streaming import MigrationRequired, StreamingDescriptor
 
 from .._constants import (
-    CLIENT_VERSION,
     CORE_TRANSACTION_CONTRACT,
     TRANSACTION_OPERATION_CONTRACT,
 )
 from ..canonical import sha256_bytes, sha256_fingerprint
-from ..clients import AdminLike
+from ..clients import AdminLike, KafkaClientFactory
 from ..config import (
     KafkaBindingSettings,
     PhysicalConsumerGroup,
@@ -36,6 +38,7 @@ from ..config import (
 from ..descriptor import adapter_descriptor
 from ..errors import KafkaConfigurationError, normalize_kafka_error
 from ..telemetry import KafkaTelemetry
+from .protocol import validate_api_versions
 
 
 class KafkaProbeEngine:
@@ -44,12 +47,15 @@ class KafkaProbeEngine:
         settings: KafkaBindingSettings,
         admin: AdminLike,
         telemetry: KafkaTelemetry,
+        client_factory: KafkaClientFactory,
     ) -> None:
         self._settings = settings
         self._admin = admin
         self._telemetry = telemetry
+        self._client_factory = client_factory
 
     def probe(self) -> AdapterProbe:
+        deadline = time.monotonic() + self._settings.operation_timeout_ms / 1000
         try:
             metadata = self._admin.list_topics(timeout=self._settings.operation_timeout_ms / 1000)
             brokers = getattr(metadata, "brokers", None)
@@ -64,7 +70,18 @@ class KafkaProbeEngine:
                 if not isinstance(cluster_id, str) or not cluster_id
                 else sha256_bytes(cluster_id.encode("utf-8"))
             )
-        except KafkaConfigurationError:
+            negotiated = {}
+            for broker_id, broker in sorted(brokers.items()):
+                host, port = getattr(broker, "host", None), getattr(broker, "port", None)
+                if not isinstance(host, str) or type(port) is not int or not 1 <= port <= 65535:
+                    raise KafkaConfigurationError("Kafka broker endpoint metadata is invalid")
+                versions = self._client_factory.api_versions(
+                    self._settings, host, port, deadline=deadline
+                )
+                negotiated[str(broker_id)] = validate_api_versions(
+                    versions, transactional=self._settings.transaction_enabled
+                )
+        except MeridianError:
             raise
         except BaseException as exc:
             raise normalize_kafka_error(exc, operation_contract="meridian.kafka.probe") from exc
@@ -82,10 +99,11 @@ class KafkaProbeEngine:
             self._settings.engine_version,
             tuple(available),
             extensions={
-                "clientVersion": CLIENT_VERSION,
+                "clientVersion": version("confluent-kafka"),
                 "coreVersion": "1.0.0",
-                "semanticsVersion": "1.0.0",
-                "streamingVersion": "1.0.0",
+                "coreDistributionVersion": version("meridian-storage-core"),
+                "semanticsVersion": version("meridian-storage-semantics"),
+                "streamingVersion": version("meridian-storage-streaming"),
                 "streamingDescriptorFingerprint": StreamingDescriptor().fingerprint,
                 "securityProfile": (
                     "isolated-plaintext-test"
@@ -109,7 +127,13 @@ class KafkaProbeEngine:
                 "controllerPresent": "true",
                 "clusterFingerprint": cluster_fingerprint,
                 "securityProfile": cast(str, manifest.extensions["securityProfile"]),
+                "selectedEngineVersion": self._settings.engine_version,
+                "observedEngineVersion": "unavailable: Kafka ApiVersions carries no release",
+                "librdkafkaVersion": libversion()[0],
+                "apiVersionsFingerprint": sha256_fingerprint(negotiated),
+                "protocolValidation": "authenticated-api-ranges.v1",
             },
+            observed_engine_version=None,
         )
 
     def verify_physical(self, resources: tuple[PhysicalResource, ...]) -> PhysicalVerification:

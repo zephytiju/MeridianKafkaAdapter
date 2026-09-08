@@ -34,7 +34,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install exact test graph
-        run: python -m pip install --disable-pip-version-check -e '.[test]'
+        run: |
+          python -m pip install --require-hashes -r requirements-runtime-lock.txt
+          python -m pip install --disable-pip-version-check -e '.[test]' -c requirements-audit.txt
       - name: Run contract and implementation tests
         run: python -m pytest -q -m 'not cluster'
 
@@ -53,7 +55,9 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install exact test graph
-        run: python -m pip install --disable-pip-version-check -e '.[test]'
+        run: |
+          python -m pip install --require-hashes -r requirements-runtime-lock.txt
+          python -m pip install --disable-pip-version-check -e '.[test]' -c requirements-audit.txt
       - name: Check formatting and lint
         run: |
           ruff format --check src scripts conformance/scripts tests

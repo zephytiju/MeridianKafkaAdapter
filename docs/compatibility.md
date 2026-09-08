@@ -1,47 +1,94 @@
-# Compatibility and support matrix
+# Release selection and compatibility
 
-## Released dependency pins
+Deployment chooses independently locked broker images and Python distributions.
+The tested release lists in the descriptor and `compatibility.json` are historical
+conformance metadata. Neither configuration parsing nor manifest construction
+rejects a release because it is absent from that list. This does not establish
+compatibility for an untested combination.
 
-| Contract | Pin | Evidence |
-|---|---|---|
-| Core | `meridian-storage-core==1.0.0` | wheel `6b8ebb70ee1a8467a96d668878a8eebf826c1c4b63b3832ae70f2c630a8ef4a1`; sdist `2c44d44569a380f44ea7f797e7fe623d0242fa79b6bc34606d6bad1bc53f2d5a` |
-| Semantics | `meridian-storage-semantics==1.0.0` | wheel `76fced0bc083f145fad1949b85147a3563f3584f99994471693915a8ba1851ec`; sdist `02605909db5dc7ff22d4ae5e3ae1b3fe6c25a68e9ecaa4c3ead36082848d0311` |
-| Streaming | `meridian-storage-streaming==1.0.0` | wheel `8fa802d1f4d69082b1bb2643856f82db9159ebe92fcd819aa529c143cd8d51eb`; sdist `a5b259c03ddf82dde8d1e6696e492a6c62f540151633b722107e8518c7cb5831` |
-| Kafka client | `confluent-kafka==2.15.0` | Apache-2.0; librdkafka-backed typed client |
+## Runtime contracts
 
-The Streaming manifest fingerprint is
-`sha256:1a13fc3917164af1b192c13e7d29caa7c082540eb0d9cd7d57e23298db07bbf2`.
-The released Streaming conformance fingerprint is
-`sha256:f8aa3e2c092062d1c758722b9ab2d9388f0deedeabf214f45e6212dc29e7cbff`.
-No sibling source tree or workspace linkage is supported.
+Startup authenticates metadata, then requests ApiVersions v0 on a separate
+bounded connection to **every advertised broker**, with the Binding's same trust
+roots, mTLS material and/or SASL identity. It validates required API range
+intersections in `probe/protocol.py`; there is no broker release inference or
+fallback table. PLAIN and SCRAM-SHA-256/512 use Kafka SaslHandshake v1 and
+SaslAuthenticate v0. SCRAM validates nonce, bounded iteration count and server
+signature. SASL failure, missing API or disjoint protocol range fails startup.
+Responses have bounded frames/counts, checked correlations and a shared deadline.
 
-Adapter 1.0.1 corrects evidence-only values in the 1.0.0 compatibility ledger;
-the adapter contract and all runtime dependency pins remain unchanged.
+The required APIs cover record-batch v2, committed Fetch, retained offsets,
+metadata, group coordination/commit/fetch and rebalances, idempotent production,
+and read-only topic configuration. Transactional Bindings additionally require
+transaction coordinator and transaction commit APIs. The existing transaction
+bridge still initializes the producer through librdkafka before readiness.
+Librdkafka independently negotiates the wire version used for data operations.
+The probe never writes events or changes topics, ACLs, retention or topology.
 
-## Apache Kafka brokers
+API ranges establish protocol availability; real publish/consume/transaction,
+authorization, rebalance and recovery tests establish behavior. ACLs, Schema,
+partition count, retention, compaction, single-Binding transactions, committed
+reads, opaque cursors and finite budgets retain their existing checks. Production
+`apache-kafka` requires authenticated TLS; `apache-kafka-test` requires explicit
+isolated plaintext opt-in. Provisioned and external clusters use the same
+Adapter runtime; their IaC lifecycle remains in MeridianConstructs.
 
-| Broker | Status | Release gate |
-|---|---|---|
-| 4.1.2 | Supported | portable real-cluster conformance |
-| 4.2.1 | Supported | portable real-cluster conformance |
-| 4.3.1 | Supported, primary | full failure, security, migration, recovery, and telemetry matrix |
-| 4.0.2 | Archived migration source only | documented migration input; runtime rejected |
-| 3.9.2 | Archived migration source only | documented migration input; runtime rejected |
+## Provenance, pins and migration from 1.0.1
 
-Versions not listed as supported fail startup descriptor validation. A Binding
-pins one exact broker version and the authenticated probe must return that same
-profile/version and the exact Capability fingerprint.
+`manifest.engineVersion` and `evidence.selectedEngineVersion` are deployment
+selection, never a broker observation. Kafka ApiVersions contains no broker
+implementation release: `AdapterProbe.observed_engine_version` is `None` and the
+evidence states unavailable. Do not copy the selected version into observation.
+An explicit `observedEngineVersion` expectation therefore fails Core validation
+when the observation is unavailable.
 
-## Capability rules
+Observed installed distributions populate `clientVersion`,
+`coreDistributionVersion`, `semanticsVersion` and `streamingVersion`. The legacy
+`coreVersion` field retains Core SPI contract 1.0.0 semantics. `driver` is the
+client identity `confluent-kafka`; its distribution release is separate. Explicit
+version pins compare to the deployment's own selected lock, not the historical
+recipe. Missing/malformed configuration and Core fingerprint checks remain.
+Physical hashes retain engine selection: changing a selected release may require
+an explicit deployment/configuration update without implying incompatibility.
 
-The adapter advertises every released Streaming 1.0.0 requirement, explicit
-replay and group-position Operations, idempotent production, dead-letter
-routing, and authenticated health probes. Transactional consume-publish is
-advertised only when the Binding supplies a stable transactional ID and uses
-`read_committed` consumers. It is limited to one compatible Kafka Binding and
-does not include database, object-store, HTTP, or other-engine effects.
+1.1.0 consumes the released Core 1.1.0 / Semantics 2.0.1 / Streaming 1.0.1 APIs.
+Metadata uses justified major-contract compatibility bounds; the exact validated
+recipe and public artifact hashes remain in `requirements-audit.txt` and
+`compatibility.json`. Core 1.1.0 supplies the release-independent shared manifest;
+Semantics 2.0.1 and Streaming 1.0.1 supply a normally installable graph. Client
+2.15.0 supplies the existing typed, producer, consumer and transaction APIs.
+Higher releases within those bounds need their own conformance evidence.
 
-The `apache-kafka` profile requires authenticated TLS and deny-by-default ACLs.
-`apache-kafka-test` exists solely for isolated CI clusters and requires the
-explicit `allowPlaintextForTesting` setting. A production deployment cannot
-select that profile.
+Serialized descriptor/config/manifest v1 shapes are unchanged. The driver value
+and runtime provenance extensions change canonical hashes. Regenerate the
+expected capability fingerprint from the selected public release combination,
+update driver and distribution pins together, verify the physical configuration,
+and roll out explicitly. Do not relabel old fingerprints or reuse old conformance
+reports. Golden documents in `tests/fixtures` capture the new exact recipe.
+
+## Gate inventory
+
+| Owned path / variant | Classification and treatment |
+|---|---|
+| config, both production and test profiles | Removed broker list predicate; retain closed profile/TLS/auth, Schema and topology validation. |
+| descriptor/constants, compatibility ledger | Historical tested releases only; no release membership gates. |
+| probe/protocol, every advertised broker | Actual authenticated API/feature contract intersection, independent of release labels. |
+| probe, physical verification | Observed installed distributions; selected broker provenance; honest unavailable broker release; preserve physical drift. |
+| runtime/transactions/consumer/producer/compiler | Existing operation and behavioral contracts; startup API validation before readiness. |
+| compatibility pins | Explicit deployment lock integrity; legacy Core contract pin remains a contract. |
+| pyproject, boundary verifier | Public API dependency bounds; enforce one distribution and no sibling source. |
+| audit lock / CI recipe | Exact reproducible test selection; no runtime release allowlist. |
+| conformance runner / compose | Any well-formed selected release; resolve image to immutable digest before provisioning; actual installed dependency versions; fail on skipped required tests. |
+| provisioned/external cluster | Shared Adapter path; provider-specific provisioning and helper inventory is owned by Constructs, not this repository. |
+
+Protocol references: [Kafka protocol](https://kafka.apache.org/protocol/) and
+[librdkafka feature discovery](https://github.com/confluentinc/librdkafka/blob/v2.15.0/INTRODUCTION.md#feature-discovery).
+
+The protocol ceilings are the Adapter's implemented data-client wire contracts,
+verified against librdkafka 2.15.0 [request builders](https://github.com/confluentinc/librdkafka/blob/v2.15.0/src/rdkafka_request.c),
+[Produce](https://github.com/confluentinc/librdkafka/blob/v2.15.0/src/rdkafka_msgset_writer.c),
+[Fetch](https://github.com/confluentinc/librdkafka/blob/v2.15.0/src/rdkafka_fetcher.c),
+and [transaction offset commit](https://github.com/confluentinc/librdkafka/blob/v2.15.0/src/rdkafka_txnmgr.c).
+Transactional offset commit requires protocol v3 for group-generation fencing.
+A broker offering only incompatible wire ranges fails for that explicit API
+reason, regardless of its implementation release label.

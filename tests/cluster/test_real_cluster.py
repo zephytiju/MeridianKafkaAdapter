@@ -8,6 +8,7 @@ import os
 import time
 from collections.abc import Mapping, Sequence
 from contextlib import suppress
+from dataclasses import replace
 from typing import Any, cast
 
 import pytest
@@ -193,6 +194,8 @@ def test_publish_batch_finite_consume_order_ack_recovery_probe_and_telemetry(
         probe = runtime.probe()
         assert probe.manifest.engine_version == kafka_cluster.engine_version
         assert probe.evidence["controllerPresent"] == "true"
+        assert probe.observed_engine_version is None
+        assert probe.evidence["protocolValidation"] == "authenticated-api-ranges.v1"
         verification = runtime.verify_physical(physical_resources(context))
         assert verification.evidence["verifiedTopicCount"] == "2"
         subscribed = cast(
@@ -590,3 +593,33 @@ def test_broker_controller_failure_is_normalized_and_recovers(
         assert _range(recovered_session).events[0].event_id == "post-failure-recovery"
     finally:
         _close(recovered_runtime, recovered_session)
+
+
+def test_unlisted_metadata_and_authenticated_tls(kafka_cluster: ClusterHarness) -> None:
+    case = kafka_cluster.create_case("release-independent-tls", partitions=1)
+    initial = case.context(tls=True, transaction_enabled=True)
+    context = replace(
+        initial, binding=replace(initial.binding, engine_version="99.0.0-metadata-only")
+    )
+    runtime, session = _open(context)
+    try:
+        probe = runtime.probe()
+        assert probe.evidence["selectedEngineVersion"] == "99.0.0-metadata-only"
+        assert probe.observed_engine_version is None
+        assert probe.evidence["securityProfile"] == "authenticated-tls"
+        runtime.verify_physical(physical_resources(context))
+        _execute(session, publish_operation("tls-unlisted-metadata"))
+        assert _range(session).events[0].event_id == "tls-unlisted-metadata"
+    finally:
+        _close(runtime, session)
+
+    invalid_name = replace(
+        context,
+        binding=replace(
+            context.binding, tls=replace(context.binding.tls, server_name="untrusted.invalid")
+        ),
+    )
+    with pytest.raises((KafkaOperationFailed, StreamingUnavailable)):
+        _open(invalid_name)
+    with pytest.raises((KafkaOperationFailed, StreamingUnavailable)):
+        _open(case.context(tls=True, password="wrong-isolated-test-password"))

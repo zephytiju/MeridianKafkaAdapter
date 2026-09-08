@@ -9,6 +9,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from importlib.metadata import version
 from types import MappingProxyType
 from typing import cast
 
@@ -19,7 +20,6 @@ from ._constants import (
     ADAPTER_CONTRACT_VERSION,
     ADAPTER_ID,
     PRODUCTION_ENGINE_PROFILE,
-    SUPPORTED_ENGINE_VERSIONS,
     TEST_ENGINE_PROFILE,
 )
 from .canonical import as_object, bounded_string, closed_object
@@ -206,8 +206,22 @@ class KafkaBindingSettings:
             raise KafkaConfigurationError("Binding must pin Adapter contract 1.0.0 exactly")
         if binding.engine_profile not in {PRODUCTION_ENGINE_PROFILE, TEST_ENGINE_PROFILE}:
             raise KafkaConfigurationError("Binding selected an unsupported Kafka Engine profile")
-        if binding.engine_version not in SUPPORTED_ENGINE_VERSIONS:
-            raise KafkaConfigurationError("Binding selected an unsupported Kafka Engine version")
+        observed = {
+            "adapterContract": ADAPTER_CONTRACT_VERSION,
+            "clientVersion": version("confluent-kafka"),
+            "coreVersion": "1.0.0",  # Legacy Core SPI contract pin, not distribution release.
+            "coreDistributionVersion": version("meridian-storage-core"),
+            "semanticsVersion": version("meridian-storage-semantics"),
+            "streamingVersion": version("meridian-storage-streaming"),
+            "driver": "confluent-kafka",
+        }
+        for key, actual in observed.items():
+            selected = binding.compatibility_pins.get(key)
+            if selected is not None and selected != actual:
+                raise KafkaConfigurationError(
+                    f"Installed {key} differs from the deployment-selected lock",
+                    adapter_provenance={"requirement": "binding.artifact-integrity"},
+                )
         bootstrap = binding.endpoint or binding.service_ref
         if bootstrap is None:
             raise KafkaConfigurationError("Kafka Binding requires an endpoint or service reference")

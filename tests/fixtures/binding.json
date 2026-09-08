@@ -1,0 +1,107 @@
+{
+  "adapterContract": "1.0.0",
+  "adapterId": "meridian.kafka",
+  "client": {
+    "acquireTimeoutMs": 1000,
+    "idleTimeoutMs": 30000,
+    "iteratorLifetimeMs": 60000,
+    "maxResultBytes": 16777216,
+    "maxSize": 8,
+    "minSize": 0,
+    "operationTimeoutMs": 250
+  },
+  "compatibilityPins": {
+    "adapterContract": "1.0.0",
+    "clientVersion": "2.15.0",
+    "coreDistributionVersion": "1.1.0",
+    "coreVersion": "1.0.0",
+    "driver": "confluent-kafka",
+    "semanticsVersion": "2.0.1",
+    "streamingVersion": "1.0.1"
+  },
+  "endpoint": "fake:9092",
+  "engineProfile": "apache-kafka-test",
+  "engineVersion": "4.3.1",
+  "extensions": {},
+  "id": "kafka-conformance",
+  "identityRef": {
+    "provider": "test",
+    "reference": "identity"
+  },
+  "physicalNamespace": "conformance",
+  "requiredCapabilityFingerprint": "sha256:3ef612d71e2005fcdb5754c72aac5291737dd13ddcba5c13dd7e1ed932327add",
+  "requiredPhysicalFingerprint": null,
+  "secretRef": {
+    "provider": "test",
+    "reference": "credential"
+  },
+  "serviceRef": null,
+  "settings": {
+    "allowPlaintextForTesting": true,
+    "autoOffsetReset": "earliest",
+    "clientId": "meridian-kafka-conformance",
+    "cursorTtlMs": 60000,
+    "maxPollIntervalMs": 60000,
+    "readCommitted": true,
+    "resources": {
+      "streaming:conformance.dead_letters": {
+        "compacted": false,
+        "compatibleSchemaFingerprints": [],
+        "kind": "stream",
+        "logicalPartitions": 1,
+        "resourceFingerprint": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "retentionMs": 60000,
+        "schemaFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "schemaRef": {
+          "catalog": "streaming",
+          "name": "dead_letter",
+          "namespace": "conformance",
+          "version": "1.0.0"
+        },
+        "topic": "dead-letters"
+      },
+      "streaming:conformance.events": {
+        "compacted": false,
+        "compatibleSchemaFingerprints": [
+          "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+        ],
+        "kind": "stream",
+        "logicalPartitions": 2,
+        "resourceFingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "retentionMs": 60000,
+        "schemaFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "schemaRef": {
+          "catalog": "streaming",
+          "name": "event",
+          "namespace": "conformance",
+          "version": "1.0.0"
+        },
+        "topic": "events"
+      },
+      "streaming:conformance.group": {
+        "groupId": "conformance-group",
+        "kind": "consumer-group",
+        "resourceFingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "subscription": "streaming:conformance.subscription"
+      },
+      "streaming:conformance.subscription": {
+        "acknowledgementTimeoutMs": 5000,
+        "deadLetterStream": "streaming:conformance.dead_letters",
+        "filter": {},
+        "kind": "subscription",
+        "maxDeliveryAttempts": 2,
+        "resourceFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "stream": "streaming:conformance.events"
+      }
+    },
+    "saslMechanism": null,
+    "sessionTimeoutMs": 10000,
+    "transactionalId": "meridian-kafka-conformance-tx"
+  },
+  "tls": {
+    "caRef": null,
+    "clientCertificateRef": null,
+    "mode": "disabled",
+    "serverName": null
+  }
+}

@@ -23,10 +23,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - kafka-version: 4.0.2
+            full: true
           - kafka-version: 4.1.2
-            full: false
+            full: true
           - kafka-version: 4.2.1
-            full: false
+            full: true
           - kafka-version: 4.3.1
             full: true
     steps:
@@ -40,7 +42,15 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install exact test graph
-        run: python -m pip install --disable-pip-version-check -e '.[test]'
+        run: |
+          python -m pip install --require-hashes -r requirements-runtime-lock.txt
+          python -m pip install --disable-pip-version-check -e '.[test]' -c requirements-audit.txt
+      - name: Install the built artifact for cluster conformance
+        run: |
+          python -m build
+          python -m pip uninstall -y meridian-storage-kafka
+          python -m pip install dist/*.whl -c requirements-audit.txt
+          python -m pip check
       - name: Run isolated real-cluster matrix
         env:
           FULL: ${{ matrix.full }}

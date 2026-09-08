@@ -26,10 +26,10 @@ FORBIDDEN_ADMIN_MUTATIONS = {
     "incremental_alter_configs",
 }
 EXPECTED_RUNTIME_DEPENDENCIES = {
-    "confluent-kafka==2.15.0",
-    "meridian-storage-core==1.0.0",
-    "meridian-storage-semantics==1.0.0",
-    "meridian-storage-streaming==1.0.0",
+    "confluent-kafka>=2.15.0,<3",
+    "meridian-storage-core>=1.1.0,<2",
+    "meridian-storage-semantics>=2.0.1,<3",
+    "meridian-storage-streaming>=1.0.1,<2",
 }
 CONSUMER_DISTRIBUTIONS = (
     "meridian-storage-core",
@@ -43,7 +43,9 @@ def main() -> None:
     if project["name"] != "meridian-storage-kafka":
         raise SystemExit("repository must own only meridian-storage-kafka")
     if set(project["dependencies"]) != EXPECTED_RUNTIME_DEPENDENCIES:
-        raise SystemExit("runtime dependencies differ from the exact released compatibility graph")
+        raise SystemExit(
+            "runtime dependencies differ from the declared public API compatibility bounds"
+        )
     package_roots = sorted(
         path.relative_to(ROOT / "src").as_posix()
         for path in (ROOT / "src").glob("meridian_storage/adapters/*")

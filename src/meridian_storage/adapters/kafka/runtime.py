@@ -130,9 +130,12 @@ class KafkaAdapterRuntime:
                     self._telemetry,
                 )
                 self._admin = admin
-                self._probe_engine = KafkaProbeEngine(self._settings, admin, self._telemetry)
+                self._probe_engine = KafkaProbeEngine(
+                    self._settings, admin, self._telemetry, self._client_factory
+                )
                 self._producer_engine = producer
                 self._consumer_engine = consumer
+                self._probe_engine.probe()
                 transaction: KafkaTransactionBridge | None = None
                 if self._settings.transaction_enabled:
                     transaction = KafkaTransactionBridge(

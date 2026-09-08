@@ -28,7 +28,9 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install exact test graph
-        run: python -m pip install --disable-pip-version-check -e '.[test]'
+        run: |
+          python -m pip install --require-hashes -r requirements-runtime-lock.txt
+          python -m pip install --disable-pip-version-check -e '.[test]' -c requirements-audit.txt
       - name: Verify tag and package version
         id: package_version
         env:
@@ -49,6 +51,14 @@ jobs:
         run: |
           python -m build
           python scripts/verify_artifacts.py dist/*
+      - name: Validate the release wheel against every required cluster profile
+        run: |
+          python -m pip uninstall -y meridian-storage-kafka
+          python -m pip install dist/*.whl -c requirements-audit.txt
+          python -m pip check
+          for version in 4.0.2 4.1.2 4.2.1 4.3.1; do
+            python conformance/scripts/run_cluster.py --kafka-version "$version" --full
+          done
           cp evidence/cluster-conformance-*.json dist/
       - name: Generate SPDX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0

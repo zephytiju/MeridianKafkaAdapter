@@ -1,7 +1,8 @@
 # Architecture
 
 `meridian-storage-kafka` implements the released Core 1.0.0 Adapter SPI for
-Operations normalized by `meridian-storage-streaming==1.0.0`.
+Operations normalized by the compatible public Streaming contract. The exact
+release validation recipe uses Core 1.1.0, Semantics 2.0.1 and Streaming 1.0.1.
 
 ```text
 mapping-first Streaming Expression
