@@ -18,38 +18,31 @@ selects this adapter through a closed Meridian Binding.
 
 ## Compatibility
 
-Version 1.0.1 is pinned to:
+Release 1.1.0 validates Kafka protocol/API capabilities independently of broker
+release numbers. Deployment selects exact package/image locks; historical tested
+broker versions are conformance records, not startup allowlists. Untested
+combinations remain unverified.
 
-| Component | Supported version |
-|---|---|
-| Python | 3.12, 3.13, 3.14 |
-| `meridian-storage-core` | exactly 1.0.0 |
-| `meridian-storage-semantics` | exactly 1.0.0 |
-| `meridian-storage-streaming` | exactly 1.0.0 |
-| `confluent-kafka` / librdkafka | exactly 2.15.0 |
-| Apache Kafka | 4.1.2, 4.2.1, 4.3.1 |
+| Dependency | Public API compatibility bounds | Exact validation recipe |
+|---|---|---|
+| Core | >=1.1.0,<2 | 1.1.0 |
+| Semantics | >=2.0.1,<3 | 2.0.1 |
+| Streaming | >=1.0.1,<2 | 1.0.1 |
+| confluent-kafka | >=2.15.0,<3 | 2.15.0 |
+| Python | >=3.12 | 3.12, 3.13, 3.14 |
 
-Kafka 3.9.2 and 4.0.2 are documented only as archived migration-source
-boundaries and are not accepted by the runtime or part of the supported
-production matrix. See
-[docs/compatibility.md](docs/compatibility.md) for the exact capability and
-evidence policy.
+See [compatibility and migration](docs/compatibility.md) for real protocol
+requirements, selected/observed provenance, deployment integrity checks and
+[release validation](docs/release-validation.md) for exact verified combinations.
 
 ## Install
 
-The adapter is installed only at a composition or deployment boundary:
+Install at the deployment boundary with its own resolved, hashed lock. The
+repository's exact regression recipe is `requirements-audit.txt`:
 
 ```bash
-python -m pip install \
-  meridian-storage-core==1.0.0 \
-  meridian-storage-semantics==1.0.0 \
-  meridian-storage-streaming==1.0.0 \
-  meridian-storage-kafka==1.0.1
+python -m pip install meridian-storage-kafka==1.1.0 -c requirements-audit.txt
 ```
-
-Version 1.0.1 corrects the upstream sdist digests and Streaming conformance
-fingerprint in the compatibility ledger shipped with 1.0.0. Runtime contracts
-and dependency versions are unchanged.
 
 Core discovers the immutable `meridian.kafka` factory through the
 `meridian_storage.adapters` entry-point group. A Binding supplies opaque
@@ -94,8 +87,8 @@ ruff format --check .
 mypy src scripts conformance/scripts tests
 pytest -q -m 'not cluster'
 python conformance/scripts/run_cluster.py --kafka-version 4.3.1 --full
-python conformance/scripts/run_cluster.py --kafka-version 4.2.1
-python conformance/scripts/run_cluster.py --kafka-version 4.1.2
+python conformance/scripts/run_cluster.py --kafka-version 4.2.1 --full
+python conformance/scripts/run_cluster.py --kafka-version 4.1.2 --full
 ```
 
 The primary real-cluster profile runs the full acceptance matrix against

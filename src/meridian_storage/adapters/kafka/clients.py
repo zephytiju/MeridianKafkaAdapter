@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from confluent_kafka import Consumer, KafkaError, Message, Producer, TopicPartition
 from confluent_kafka.admin import AdminClient, ConfigResource  # type: ignore[attr-defined]
+
+if TYPE_CHECKING:
+    from .config import KafkaBindingSettings
 
 type KafkaClientConfigValue = str | int | float
 type KafkaClientConfig = Mapping[str, KafkaClientConfigValue]
@@ -121,6 +124,10 @@ class FutureLike(Protocol):
 
 
 class KafkaClientFactory(Protocol):
+    def api_versions(
+        self, settings: KafkaBindingSettings, host: str, port: int, *, deadline: float
+    ) -> Mapping[int, tuple[int, int]]: ...
+
     def producer(self, config: KafkaClientConfig) -> ProducerLike: ...
 
     def consumer(self, config: KafkaClientConfig) -> ConsumerLike: ...
@@ -130,6 +137,13 @@ class KafkaClientFactory(Protocol):
 
 class ConfluentKafkaClientFactory:
     """Create only data-plane clients; no Admin mutation method is exposed."""
+
+    def api_versions(
+        self, settings: KafkaBindingSettings, host: str, port: int, *, deadline: float
+    ) -> Mapping[int, tuple[int, int]]:
+        from .probe.protocol import probe_api_versions
+
+        return probe_api_versions(settings, host, port, deadline=deadline)
 
     def producer(self, config: KafkaClientConfig) -> ProducerLike:
         return cast(ProducerLike, Producer(dict(config)))

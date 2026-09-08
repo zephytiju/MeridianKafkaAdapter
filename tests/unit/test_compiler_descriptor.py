@@ -67,7 +67,7 @@ def test_descriptor_is_exact_deterministic_and_covers_released_requirements() ->
     )
 
     assert descriptor.adapter_id == "meridian.kafka"
-    assert descriptor.driver == "confluent-kafka==2.15.0"
+    assert descriptor.driver == "confluent-kafka"
     assert contracts == expected
     assert len(descriptor.capabilities) == 13
     assert descriptor.supported_engine_versions["apache-kafka"] == (
@@ -77,7 +77,7 @@ def test_descriptor_is_exact_deterministic_and_covers_released_requirements() ->
     )
     assert descriptor.fingerprint == adapter_descriptor().fingerprint
     assert descriptor.fingerprint == (
-        "sha256:1ed49d5602c43585ac7a5e4dd2858d041b57c128e78146928ac0451b0abe6e68"
+        "sha256:e1595e61aa5a2ce8ccc05dc5ec0aaa1c8018059652c553aadb24b4e785a540d5"
     )
     assert all(item.migration_behavior == "iac-external" for item in descriptor.capabilities)
 

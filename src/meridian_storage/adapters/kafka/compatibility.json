@@ -1,9 +1,12 @@
 {
   "adapterContractVersion": "1.0.0",
-  "adapterDescriptorFingerprint": "sha256:1ed49d5602c43585ac7a5e4dd2858d041b57c128e78146928ac0451b0abe6e68",
+  "adapterDescriptorFingerprint": "sha256:e1595e61aa5a2ce8ccc05dc5ec0aaa1c8018059652c553aadb24b4e785a540d5",
   "brokerMatrix": {
     "migrationSources": [
       "3.9.2",
+      "4.0.2"
+    ],
+    "newlyValidated": [
       "4.0.2"
     ],
     "primary": "4.3.1",
@@ -16,15 +19,11 @@
   "designRevisions": {
     "catalogsAndPublicInterfaces": 70,
     "engineAdapters": 24,
-    "kafkaStreamingAdapter": 6,
-    "meridianConstructs": 45,
+    "kafkaStreamingAdapter": 33,
+    "meridianConstructs": 113,
     "meridianHld": 56
   },
-  "distribution": "meridian-storage-kafka==1.0.1",
-  "evidenceCorrection": {
-    "reason": "Corrects upstream sdist SHA-256 values and the Streaming conformance fingerprint; runtime contracts and pins are unchanged.",
-    "supersedesDistribution": "meridian-storage-kafka==1.0.0"
-  },
+  "distribution": "meridian-storage-kafka==1.1.0",
   "formatVersion": "meridian.kafka.compatibility.v1",
   "pins": {
     "confluent-kafka": {
@@ -32,26 +31,28 @@
       "version": "2.15.0"
     },
     "meridian-storage-core": {
-      "sdistSha256": "2c44d44569a380f44ea7f797e7fe623d0242fa79b6bc34606d6bad1bc53f2d5a",
-      "version": "1.0.0",
-      "wheelSha256": "6b8ebb70ee1a8467a96d668878a8eebf826c1c4b63b3832ae70f2c630a8ef4a1"
+      "sdistSha256": "46f7b64b706112dad0b62f768bfaf8b05f22d73d87f77702a0b3f7fd61544ca7",
+      "source": "https://pypi.org/project/meridian-storage-core/1.1.0/",
+      "version": "1.1.0",
+      "wheelSha256": "fc7372a17993f43ec285e3d52c0e9c458ef8e6f5ce13bb2d1b01b064aa8eff49"
     },
     "meridian-storage-semantics": {
-      "sdistSha256": "02605909db5dc7ff22d4ae5e3ae1b3fe6c25a68e9ecaa4c3ead36082848d0311",
-      "version": "1.0.0",
-      "wheelSha256": "76fced0bc083f145fad1949b85147a3563f3584f99994471693915a8ba1851ec"
+      "sdistSha256": "982c94d2697592456b8d8ba862416a80a141c485d5349b3c0d3dcd0dd9ea3fcd",
+      "source": "https://pypi.org/project/meridian-storage-semantics/2.0.1/",
+      "version": "2.0.1",
+      "wheelSha256": "5acd127b849a7898c33ed33308b595490447dddb5af9a7d2ec1df16b546279a4"
     },
     "meridian-storage-streaming": {
-      "conformanceFingerprint": "sha256:f8aa3e2c092062d1c758722b9ab2d9388f0deedeabf214f45e6212dc29e7cbff",
-      "manifestFingerprint": "sha256:1a13fc3917164af1b192c13e7d29caa7c082540eb0d9cd7d57e23298db07bbf2",
-      "sdistSha256": "a5b259c03ddf82dde8d1e6696e492a6c62f540151633b722107e8518c7cb5831",
-      "version": "1.0.0",
-      "wheelSha256": "8fa802d1f4d69082b1bb2643856f82db9159ebe92fcd819aa529c143cd8d51eb"
+      "sdistSha256": "41d7f7844b05ad9ef93d10b47b889d5d1d158ba944ac0fbff8722d9513af9d37",
+      "source": "https://pypi.org/project/meridian-storage-streaming/1.0.1/",
+      "version": "1.0.1",
+      "wheelSha256": "8a14158255a1594e953fc0929c6476e4b9f1a59c8c7b219470a431cdebdf8582"
     }
   },
   "python": [
     "3.12",
     "3.13",
     "3.14"
-  ]
+  ],
+  "releaseSelectionPolicy": "Tested releases are historical conformance metadata, never runtime membership gates."
 }

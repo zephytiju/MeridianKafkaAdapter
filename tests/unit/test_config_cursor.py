@@ -74,8 +74,8 @@ def test_closed_binding_parses_and_redacts_client_material() -> None:
             "settings are invalid",
         ),
         (
-            lambda value: value.update({"engineVersion": "4.0.2"}),
-            "unsupported Kafka Engine version",
+            lambda value: value.update({"engineProfile": "unknown"}),
+            "unsupported Kafka Engine profile",
         ),
         (
             lambda value: cast(dict[str, object], value["settings"]).update(

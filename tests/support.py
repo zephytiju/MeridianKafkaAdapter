@@ -8,6 +8,7 @@ import json
 import zlib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from importlib.metadata import version
 from types import SimpleNamespace
 from typing import cast
 
@@ -24,6 +25,7 @@ from meridian_storage.adapters.kafka.clients import (
     ProducerLike,
 )
 from meridian_storage.adapters.kafka.config import KafkaBindingSettings
+from meridian_storage.adapters.kafka.probe.protocol import BASE_APIS, TRANSACTION_APIS
 from meridian_storage.runtime.config import BindingConfig
 from meridian_storage.spi import (
     AdapterCreateContext,
@@ -172,7 +174,7 @@ class FakeBroker:
             for name in names
             if name in self.records
         }
-        return FakeClusterMetadata(topics, {1: SimpleNamespace(id=1)})
+        return FakeClusterMetadata(topics, {1: SimpleNamespace(id=1, host="fake", port=9092)})
 
 
 class FakeFuture:
@@ -467,6 +469,16 @@ class FakeFactory:
         self.admin_client = FakeAdmin(self.broker)
         self.producers: list[FakeProducer] = []
         self.consumers: list[FakeConsumer] = []
+        self.protocol_versions = {
+            key: (minimum, maximum)
+            for key, (_, minimum, maximum) in (BASE_APIS | TRANSACTION_APIS).items()
+        }
+
+    def api_versions(
+        self, settings: KafkaBindingSettings, host: str, port: int, *, deadline: float
+    ) -> Mapping[int, tuple[int, int]]:
+        del settings, host, port, deadline
+        return self.protocol_versions
 
     def producer(self, config: KafkaClientConfig) -> ProducerLike:
         selected = FakeProducer(self.broker, transactional="transactional.id" in config)
@@ -561,11 +573,12 @@ def binding_document(
         "requiredPhysicalFingerprint": None,
         "compatibilityPins": {
             "adapterContract": "1.0.0",
-            "clientVersion": "2.15.0",
+            "clientVersion": version("confluent-kafka"),
             "coreVersion": "1.0.0",
-            "driver": "confluent-kafka==2.15.0",
-            "semanticsVersion": "1.0.0",
-            "streamingVersion": "1.0.0",
+            "coreDistributionVersion": version("meridian-storage-core"),
+            "driver": "confluent-kafka",
+            "semanticsVersion": version("meridian-storage-semantics"),
+            "streamingVersion": version("meridian-storage-streaming"),
         },
         "settings": {
             "clientId": "meridian-kafka-conformance",

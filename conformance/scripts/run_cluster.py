@@ -10,8 +10,10 @@ import os
 import re
 import subprocess  # nosec B404
 import sys
-import tomllib
+import tempfile
 from datetime import UTC, datetime
+from importlib.metadata import distribution
+from importlib.metadata import version as installed_version
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree  # nosec B405
@@ -19,7 +21,6 @@ from xml.etree import ElementTree  # nosec B405
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = ROOT / "conformance" / "docker-compose.yml"
 EVIDENCE_DIR = ROOT / "evidence"
-SUPPORTED_VERSIONS = ("4.1.2", "4.2.1", "4.3.1")
 ACCEPTANCE_COVERAGE = {
     "ack-recovery": "test_redelivery_ack_recovery_and_dead_letter",
     "acl-denial": "test_acl_denial_and_live_credential_rotation",
@@ -40,6 +41,8 @@ ACCEPTANCE_COVERAGE = {
     "schema-evolution": "test_schema_evolution_accepts_compatible_and_rejects_incompatible",
     "telemetry": "test_publish_batch_finite_consume_order_ack_recovery_probe_and_telemetry",
     "transactional-consume-publish": "test_idempotent_producer_and_transactional_consume_publish",
+    "authenticated-tls": "test_unlisted_metadata_and_authenticated_tls",
+    "unlisted-release-metadata": "test_unlisted_metadata_and_authenticated_tls",
 }
 
 
@@ -71,7 +74,10 @@ def _source_tree_sha256() -> str:
         ROOT / "src",
         ROOT / "tests",
     )
-    files = [ROOT / name for name in ("pyproject.toml", "README.md", "SECURITY.md")]
+    files = [
+        ROOT / name
+        for name in ("pyproject.toml", "README.md", "SECURITY.md", "requirements-runtime-lock.txt")
+    ]
     for selected_root in selected_roots:
         files.extend(path for path in selected_root.rglob("*") if path.is_file())
     for path in sorted(files):
@@ -137,17 +143,10 @@ def _utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
-def _distribution_version() -> str:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    version = project.get("version")
-    if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
-        raise RuntimeError("project.version must be an exact semantic version")
-    return version
-
-
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--kafka-version", required=True, choices=SUPPORTED_VERSIONS)
+    parser.add_argument("--kafka-version", required=True)
+    parser.add_argument("--image", help="deployment-selected Apache Kafka image tag or digest")
     parser.add_argument("--port", type=int, default=19094)
     parser.add_argument(
         "--full",
@@ -160,10 +159,12 @@ def _arguments() -> argparse.Namespace:
 def main() -> int:
     arguments = _arguments()
     version = str(arguments.kafka_version)
-    adapter_version = _distribution_version()
+    adapter_version = installed_version("meridian-storage-kafka")
+    if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?", version) is None:
+        raise ValueError("--kafka-version must be an exact release coordinate")
     port = int(arguments.port)
-    if not 1024 <= port <= 65_535:
-        raise ValueError("--port must be between 1024 and 65535")
+    if not 1024 <= port <= 65_534:
+        raise ValueError("--port must be between 1024 and 65534 (TLS uses the next port)")
     project = f"meridian-kafka-conformance-{version.replace('.', '')}"
     if re.fullmatch(r"[a-z0-9-]+", project) is None:
         raise ValueError("compose project name is invalid")
@@ -173,6 +174,8 @@ def main() -> int:
             "KAFKA_BOOTSTRAP_SERVERS": f"127.0.0.1:{port}",
             "KAFKA_ENGINE_VERSION": version,
             "KAFKA_PORT": str(port),
+            "KAFKA_TLS_PORT": str(port + 1),
+            "KAFKA_TLS_BOOTSTRAP_SERVERS": f"127.0.0.1:{port + 1}",
             "KAFKA_VERSION": version,
             "MERIDIAN_KAFKA_COMPOSE_FILE": str(COMPOSE_FILE),
             "MERIDIAN_KAFKA_COMPOSE_PROJECT": project,
@@ -186,7 +189,7 @@ def main() -> int:
     log_path = EVIDENCE_DIR / f"cluster-conformance-{version}.log"
     started_at = _utc_now()
     result_code = 1
-    image = f"apache/kafka:{version}"
+    image = arguments.image or f"apache/kafka:{version}"
     image_digest = "unavailable"
     pytest_command = [
         sys.executable,
@@ -200,9 +203,42 @@ def main() -> int:
         "--timeout=180",
         f"--junitxml={junit}",
     ]
+    tls_directory = tempfile.TemporaryDirectory(prefix="meridian-kafka-test-tls-")
+    tls_path = Path(tls_directory.name)
+    # Throwaway isolated-cluster material, readable by the container's service UID.
+    tls_path.chmod(0o755)
+    environment["KAFKA_TLS_DIR"] = str(tls_path)
+    environment["KAFKA_TLS_CERT"] = str(tls_path / "cert.pem")
     try:
-        _run([*compose, "up", "-d", "--wait", "--wait-timeout", "180"], environment=environment)
+        _run(
+            [
+                "openssl",
+                "req",
+                "-x509",
+                "-newkey",
+                "rsa:2048",
+                "-nodes",
+                "-days",
+                "1",
+                "-subj",
+                "/CN=localhost",
+                "-addext",
+                "subjectAltName=IP:127.0.0.1,DNS:localhost",
+                "-keyout",
+                str(tls_path / "key.pem"),
+                "-out",
+                str(tls_path / "cert.pem"),
+            ],
+            environment=environment,
+            capture=True,
+        )
+        (tls_path / "keystore.pem").write_bytes(
+            (tls_path / "key.pem").read_bytes() + (tls_path / "cert.pem").read_bytes()
+        )
+        _run(["docker", "pull", image], environment=environment)
         image_digest = _image_digest(image, environment)
+        environment["KAFKA_IMAGE"] = image_digest
+        _run([*compose, "up", "-d", "--wait", "--wait-timeout", "180"], environment=environment)
         completed = _run(pytest_command, environment=environment, check=False, capture=True)
         result_code = completed.returncode
         sys.stdout.write(completed.stdout)
@@ -221,6 +257,7 @@ def main() -> int:
             environment=environment,
             check=False,
         )
+        tls_directory.cleanup()
 
     totals: dict[str, int | float] = {
         "tests": 0,
@@ -234,17 +271,25 @@ def main() -> int:
     if junit.exists():
         totals, cases = _parse_junit(junit)
         junit_sha256 = _sha256(junit)
+    if totals["skipped"] or not totals["tests"]:
+        result_code = 1
     evidence: dict[str, Any] = {
         "acceptanceCoverage": ACCEPTANCE_COVERAGE,
         "adapter": {
             "distribution": "meridian-storage-kafka",
             "version": adapter_version,
+            "installedArtifact": json.loads(
+                distribution("meridian-storage-kafka").read_text("direct_url.json") or "null"
+            ),
         },
         "dependencies": {
-            "confluent-kafka": "2.15.0",
-            "meridian-storage-core": "1.0.0",
-            "meridian-storage-semantics": "1.0.0",
-            "meridian-storage-streaming": "1.0.0",
+            name: installed_version(name)
+            for name in (
+                "confluent-kafka",
+                "meridian-storage-core",
+                "meridian-storage-semantics",
+                "meridian-storage-streaming",
+            )
         },
         "engine": {
             "image": image,
@@ -262,7 +307,7 @@ def main() -> int:
             "authentication": "SASL/PLAIN",
             "authorizer": "org.apache.kafka.metadata.authorizer.StandardAuthorizer",
             "scope": "isolated-test-only",
-            "transport": "SASL_PLAINTEXT",
+            "transport": ["SASL_PLAINTEXT", "SASL_SSL"],
         },
         "sourceTreeSha256": _source_tree_sha256(),
         "startedAt": started_at,

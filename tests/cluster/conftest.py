@@ -69,6 +69,7 @@ class ClusterCase:
         max_delivery_attempts: int = 2,
         cursor_ttl_ms: int = 60_000,
         partitions: int | None = None,
+        tls: bool = False,
     ) -> AdapterCreateContext:
         selected_partitions = self.partitions if partitions is None else partitions
         document = binding_document(
@@ -100,6 +101,18 @@ class ClusterCase:
         dead_letter["topic"] = self.dead_letter_topic
         group = _mapping(resources[str(GROUP_REF)])
         group["groupId"] = self.group_id
+        ca = None
+        if tls:
+            document["engineProfile"] = "apache-kafka"
+            document["endpoint"] = os.environ["KAFKA_TLS_BOOTSTRAP_SERVERS"]
+            settings["allowPlaintextForTesting"] = False
+            document["tls"] = {
+                "mode": "server",
+                "serverName": "localhost",
+                "caRef": {"provider": "test", "reference": "ca"},
+                "clientCertificateRef": None,
+            }
+            ca = SecretValue(Path(os.environ["KAFKA_TLS_CERT"]).read_bytes())
         binding = BindingConfig.from_mapping(document, "$.bindings[0]")
         identity = {
             "principal": f"User:{username}",
@@ -123,6 +136,7 @@ class ClusterCase:
             binding,
             SecretValue(json.dumps(identity, sort_keys=True).encode("utf-8")),
             SecretValue(json.dumps(credential, sort_keys=True).encode("utf-8")),
+            ca,
         )
 
 

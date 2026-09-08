@@ -1,0 +1,368 @@
+{
+  "availableOperationContracts": [
+    "meridian.streaming.acknowledge",
+    "meridian.streaming.create-resource",
+    "meridian.streaming.group-position",
+    "meridian.streaming.negative-acknowledge",
+    "meridian.streaming.poll",
+    "meridian.streaming.publish",
+    "meridian.streaming.publish-batch",
+    "meridian.streaming.publish-schema",
+    "meridian.streaming.read-range",
+    "meridian.streaming.replay",
+    "meridian.streaming.subscribe",
+    "meridian.streaming.transactional-consume-publish",
+    "meridian.transaction"
+  ],
+  "descriptor": {
+    "adapterContractVersion": "1.0.0",
+    "adapterId": "meridian.kafka",
+    "capabilities": [
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "at-least-once",
+          "consumer-groups",
+          "monotonic-safe-position"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.acknowledge",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "none",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "streaming-resource-lifecycle"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.create-resource",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "compare-and-set",
+          "consumer-groups",
+          "explicit-group-position",
+          "opaque-cursors"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.group-position",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "at-least-once",
+          "consumer-groups",
+          "dead-letter",
+          "redelivery"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.negative-acknowledge",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "at-least-once",
+          "consumer-groups",
+          "per-logical-partition-ordering"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {
+          "maxPollSize": 10000,
+          "maxWaitTimeoutMs": 300000
+        },
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.poll",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "at-least-once",
+          "idempotent-producer",
+          "per-logical-partition-ordering",
+          "schema-fingerprint"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.publish",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "at-least-once",
+          "idempotent-producer",
+          "per-logical-partition-ordering",
+          "schema-fingerprint"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {
+          "maxBatchSize": 10000
+        },
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.publish-batch",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "none",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "streaming-schema-publication"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.publish-schema",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "finite-retained-range",
+          "opaque-cursors",
+          "retention-boundary-validation"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {
+          "maxRangePartitions": 128,
+          "maxRangeSize": 10000
+        },
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.read-range",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "explicit-replay",
+          "finite-retained-range",
+          "opaque-cursors",
+          "retention-boundary-validation"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {
+          "maxRangePartitions": 128,
+          "maxRangeSize": 10000
+        },
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.replay",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "none",
+        "extensions": {
+          "catalog": "streaming",
+          "consumerSurface": "mapping-first",
+          "lifecycleAuthority": "iac"
+        },
+        "guarantees": [
+          "subscriptions"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "physical-mapping",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.subscribe",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "externalSideEffects": false
+        },
+        "guarantees": [
+          "atomic-consumed-offset",
+          "atomic-publish",
+          "committed-reads",
+          "idempotent-producer",
+          "single-binding"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "transaction-coordinator"
+        ],
+        "limits": {
+          "maxBatchSize": 10000
+        },
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.streaming.transactional-consume-publish",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      },
+      {
+        "cursorBehavior": "opaque-hmac-sha256",
+        "extensions": {
+          "scope": "single-compatible-kafka-binding"
+        },
+        "guarantees": [
+          "atomic",
+          "no-dirty-reads",
+          "single-binding"
+        ],
+        "healthProbes": [
+          "authenticated-metadata",
+          "transaction-coordinator"
+        ],
+        "limits": {},
+        "migrationBehavior": "iac-external",
+        "operationContract": "meridian.transaction",
+        "operationVersions": [
+          "1.0.0"
+        ]
+      }
+    ],
+    "driver": "confluent-kafka",
+    "supportedEngineVersions": {
+      "apache-kafka": [
+        "4.1.2",
+        "4.2.1",
+        "4.3.1"
+      ],
+      "apache-kafka-test": [
+        "4.1.2",
+        "4.2.1",
+        "4.3.1"
+      ]
+    }
+  },
+  "engineProfile": "apache-kafka-test",
+  "engineVersion": "4.3.1",
+  "extensions": {
+    "clientVersion": "2.15.0",
+    "coreDistributionVersion": "1.1.0",
+    "coreVersion": "1.0.0",
+    "securityProfile": "isolated-plaintext-test",
+    "semanticsVersion": "2.0.1",
+    "streamingDescriptorFingerprint": "sha256:f35ad73ecd8924637e3bae2e75de8bea832e5e7f04c6ebce5512efc470ed40f4",
+    "streamingVersion": "1.0.1"
+  },
+  "formatVersion": "meridian-adapter-capabilities.v1"
+}
