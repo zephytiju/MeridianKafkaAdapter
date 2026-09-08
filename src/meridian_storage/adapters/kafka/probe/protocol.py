@@ -227,6 +227,7 @@ def _authenticate(connection: _Connection, settings: KafkaBindingSettings) -> No
 
 def _tls_context(settings: KafkaBindingSettings) -> ssl.SSLContext:
     context = ssl.create_default_context(cadata=settings.tls_ca_pem)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     if settings.tls_mode == "mutual":
         # SSLContext needs filenames. NamedTemporaryFile is owner-only and removes
         # both files immediately after OpenSSL loads the key/certificate.
